@@ -1,0 +1,15 @@
+{
+  "name": "Word Hugger",
+  "id": "1285425464785405153",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  },
+  "relaunchButtons": [
+    {"command": "adjustSpaces", "name": "Hug orphans"}
+  ]
+}

@@ -1,66 +1,61 @@
 figma.skipInvisibleInstanceChildren = true;
 
 if (figma.currentPage) {
-    const adjustSpaces = (text) => {
-        // Extract words considering both spaces and non-breaking spaces
+
+    const hugLastWordInLine = (text) => {
         const words = text.match(/[^ \u00A0]+/g);
         
-        if (!words || words.length <= 2) {
-            return text;
-        }
-        
-        // Determine the position of the second last word
+        if (!words || words.length <= 2) return text;
+
         const secondLastWordPosition = text.lastIndexOf(words[words.length - 2]);
-    
-        // Determine the start of the last word (second last word length + its start position + 1 for the space)
         const lastSpaceIndex = secondLastWordPosition + words[words.length - 2].length;
         
-        if (lastSpaceIndex !== -1 && text.charAt(lastSpaceIndex) === ' ') {
-            text = text.slice(0, lastSpaceIndex) + '\u00A0' + text.slice(lastSpaceIndex + 1);
+        if (text.charAt(lastSpaceIndex) === ' ') {
+            return text.slice(0, lastSpaceIndex) + '\u00A0' + text.slice(lastSpaceIndex + 1);
         }
     
         return text;
-    };    
+    };
 
-    let textNodes = [];
+    const collectTextNodes = () => {
+        let nodes = [];
 
-    if (figma.currentPage.selection.length > 0) {
-        figma.currentPage.selection.forEach(selectedNode => {
-            if (selectedNode.type === "TEXT") {
-                textNodes.push(selectedNode);
-            } else if (typeof selectedNode.findAll === "function") {
-                const selectedTextNodes = selectedNode.findAll(node => node.type === "TEXT");
-                textNodes = textNodes.concat(selectedTextNodes);
-            }
-        });
-    } else {
-        textNodes = figma.currentPage.findAll(node => node.type === "TEXT");
-    }
+        if (figma.currentPage.selection.length > 0) {
+            figma.currentPage.selection.forEach(selectedNode => {
+                if (selectedNode.type === "TEXT") {
+                    nodes.push(selectedNode);
+                } else if (typeof selectedNode.findAll === "function") {
+                    nodes = nodes.concat(selectedNode.findAll(node => node.type === "TEXT"));
+                }
+            });
+        } else {
+            nodes = figma.currentPage.findAll(node => node.type === "TEXT");
+        }
 
-    const validTextNodes = textNodes.filter(textNode => textNode.fontName && textNode.fontName.family && textNode.fontName.style);
-    const loadFontsPromises = validTextNodes.map(textNode => figma.loadFontAsync({ family: textNode.fontName.family, style: textNode.fontName.style }));
+        return nodes;
+    };
 
-    let totalOrphansAdjusted = 0;
+    const processOrphanLines = (textNodes) => {
+        let totalOrphanLinesHugged = 0;
 
-    Promise.all(loadFontsPromises).then(() => {
         textNodes.forEach(textNode => {
             const paragraphs = textNode.characters.split('\n');
-            const adjustedParagraphs = paragraphs.map(adjustSpaces);
+            const huggedParagraphs = paragraphs.map(hugLastWordInLine);
 
             for (let i = 0; i < paragraphs.length; i++) {
-                if (paragraphs[i] !== adjustedParagraphs[i]) {
-                    totalOrphansAdjusted++;
+                if (paragraphs[i] !== huggedParagraphs[i]) {
+                    totalOrphanLinesHugged++;
                 }
             }
 
-            if (JSON.stringify(paragraphs) !== JSON.stringify(adjustedParagraphs)) {
+            if (JSON.stringify(paragraphs) !== JSON.stringify(huggedParagraphs)) {
                 const originalSegments = textNode.getStyledTextSegments(["fontSize", "fontName", "fontWeight", "textCase", "textDecoration", "letterSpacing", "lineHeight", "hyperlink", "fills", "textStyleId", "fillStyleId", "listOptions", "indentation"]);
 
                 let finalText = '';
                 let finalSegments = [];
 
-                adjustedParagraphs.forEach((paragraph, idx) => {
-                    finalText += paragraph + (idx < adjustedParagraphs.length - 1 ? '\n' : '');
+                huggedParagraphs.forEach((paragraph, idx) => {
+                    finalText += paragraph + (idx < huggedParagraphs.length - 1 ? '\n' : '');
                     const paragraphStart = finalText.length - paragraph.length;
                     const paragraphEnd = finalText.length;
 
@@ -88,12 +83,19 @@ if (figma.currentPage) {
             }
         });
 
-        figma.currentPage.setRelaunchData({ adjustSpaces: 'Click to hug words in this page.' });
-        figma.notify(`Hugged ${totalOrphansAdjusted} words (つ ᵕ ᴗ ᵕ )つ(◡ ‿ ◡  )`);
+        figma.currentPage.setRelaunchData({ hugWords: 'Click to hug orphan lines in this page.' });
+        figma.notify(`Hugged ${totalOrphanLinesHugged} orphan lines (つ ᵕ ᴗ ᵕ )つ(◡ ‿ ◡  )`);
         figma.closePlugin();
+    };
 
-    }).catch(error => {
-        figma.notify('An error occurred: ' + error.message);
-        figma.closePlugin();
-    });
+    const textNodes = collectTextNodes();
+    const validTextNodes = textNodes.filter(textNode => textNode.fontName && textNode.fontName.family && textNode.fontName.style);
+    const loadFontsPromises = validTextNodes.map(textNode => figma.loadFontAsync({ family: textNode.fontName.family, style: textNode.fontName.style }));
+
+    Promise.all(loadFontsPromises)
+        .then(() => processOrphanLines(textNodes))
+        .catch(error => {
+            figma.notify('An error occurred: ' + error.message);
+            figma.closePlugin();
+        });
 }

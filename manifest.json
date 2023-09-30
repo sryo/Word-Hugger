@@ -10,6 +10,6 @@
     "allowedDomains": ["none"]
   },
   "relaunchButtons": [
-    {"command": "adjustSpaces", "name": "Hug orphans"}
+    {"command": "hugWords", "name": "Hug orphan lines"}
   ]
 }

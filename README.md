@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/sryo/Word-Hugger/main/icon.png" height="128" alt="Word Hugger logo"></img>
+<img src="https://github.com/sryo/Word-Hugger/blob/main/icon.png?raw=true" height="128" alt="Word Hugger logo"></img>
 # [Word Hugger](https://www.figma.com/community/plugin/1285425464785405153/word-hugger)
 
 Word Hugger scans all the text elements on the current Figma page, identifying and adjusting paragraphs that end with short, isolated words – commonly referred to as "orphans." By converting the space before these orphans into a non-breaking space, the code ensures that these words are not isolated at the end of a paragraph.
